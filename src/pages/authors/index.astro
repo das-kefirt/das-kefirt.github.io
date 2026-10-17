@@ -4,4 +4,4 @@ import { articles } from '../../lib/articles.mjs';
 import { authorSlug } from '../../lib/content.mjs';
 const authors = [...new Set(articles.flatMap(a => [a.author, a.translator].filter(Boolean)))].sort((a,b) => a.localeCompare(b, 'ru'));
 ---
-<Base title="Авторы"><div class="wrap page-section"><header class="page-heading"><span class="eyebrow">Участники журнала</span><h1>Авторы<span class="period">.</span></h1><p>Авторы и переводчики das kefirt.</p></header>{authors.length ? <ul class="author-list">{authors.map(name => <li><a href={`/authors/${authorSlug(name)}/`}>{name} ↗</a></li>)}</ul> : <div class="empty-state"><p>Имена авторов появятся здесь вместе с первыми публикациями.</p></div>}</div></Base>
+<Base title="Авторы"><div class="wrap page-section"><header class="page-heading"><h1>Авторы<span class="period">.</span></h1><p>Авторы и переводчики das kefirt.</p></header>{authors.length ? <ul class="author-list">{authors.map(name => <li><a href={`/authors/${authorSlug(name)}/`}>{name} ↗</a></li>)}</ul> : <div class="empty-state"><p>Имена авторов появятся здесь вместе с первыми публикациями.</p></div>}</div></Base>

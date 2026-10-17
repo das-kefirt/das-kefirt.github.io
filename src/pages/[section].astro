@@ -7,4 +7,4 @@ export function getStaticPaths() { return sections.map(section => ({ params: { s
 const { section } = Astro.props;
 const items = articles.filter(a => a.section === section.slug);
 ---
-<Base title={section.label} description={section.description}><div class="wrap page-section"><header class="page-heading"><span class="eyebrow">Журнал / {section.label}</span><h1>{section.label}<span class="period">.</span></h1><p>{section.description}</p></header><ArticleList articles={items} /></div></Base>
+<Base title={section.label} description={section.description}><div class="wrap page-section"><header class="page-heading"><h1>{section.label}<span class="period">.</span></h1><p>{section.description}</p></header><ArticleList articles={items} /></div></Base>

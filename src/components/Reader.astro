@@ -13,7 +13,7 @@ const schema = { '@context': 'https://schema.org', '@type': 'Article', headline:
 <Base title={article.title} description={article.description} noindex={demo} article>
   {!demo && <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />}
   <article class="reader wrap" data-pagefind-body={!demo ? '' : undefined} data-pagefind-ignore={demo ? '' : undefined}>
-    {demo && <div class="demo-banner">Образец оформления · не публикация журнала</div>}
+    {demo && <div class="demo-banner">Образец оформления</div>}
     <header class="reader-header">
       <a class="eyebrow" href={`/${section.slug}/`}>{section.singular}</a>
       <h1 data-pagefind-meta="title">{article.title}</h1>

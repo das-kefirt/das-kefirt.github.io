@@ -1,12 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
 ---
-<Base title="Поиск" noindex><div class="wrap page-section"><header class="page-heading"><span class="eyebrow">По всему журналу</span><h1>Найти текст<span class="period">.</span></h1><p>Ищите по имени, названию или словам внутри публикации.</p></header><div id="search"></div><p id="search-fallback" class="muted">Загружаем поиск…</p><noscript><p>Для поиска включите JavaScript. Все тексты доступны в <a href="/archive/">архиве</a>.</p></noscript></div>
+<Base title="Поиск" noindex><div class="wrap page-section"><header class="page-heading"><h1>Найти текст<span class="period">.</span></h1><p>Ищите по имени, названию или словам внутри публикации.</p></header><div id="search"></div><p id="search-fallback" class="muted">Загружаем поиск…</p><noscript><p>Для поиска включите JavaScript. Все тексты доступны в <a href="/archive/">архиве</a>.</p></noscript></div>
 <link slot="head" rel="stylesheet" href="/pagefind/pagefind-ui.css" />
 <script is:inline src="/pagefind/pagefind-ui.js"></script>
 <script is:inline>
   const fallback = document.getElementById('search-fallback');
-  try { new PagefindUI({ element: '#search', showSubResults: true, showImages: false, translations: { placeholder: 'Что вы хотите найти?', zero_results: 'По запросу «[SEARCH_TERM]» ничего не найдено', clear_search: 'Очистить', searching: 'Ищем…', load_more: 'Показать ещё', search_label: 'Поиск по журналу' } }); fallback.hidden = true; }
+  try { new PagefindUI({ element: '#search', showSubResults: true, showImages: false, translations: { placeholder: 'Что вы хотите найти?', zero_results: 'По запросу «[SEARCH_TERM]» ничего не найдено', clear_search: 'Очистить', searching: 'Ищем…', load_more: 'Показать ещё', search_label: 'Поиск по сайту' } }); fallback.hidden = true; }
   catch { fallback.textContent = 'Поиск временно недоступен. Перейдите в архив публикаций.'; }
 </script>
 </Base>

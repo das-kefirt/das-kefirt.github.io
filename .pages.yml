@@ -130,7 +130,7 @@ content:
             type: text
             required: true
   - name: site
-    label: Настройки журнала
+    label: Настройки сайта
     type: file
     path: src/data/site.json
     format: json

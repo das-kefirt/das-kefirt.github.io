@@ -3,9 +3,9 @@ import { Marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
 
 export const sections = [
-  { slug: 'translations', label: 'Переводы', singular: 'Перевод', description: 'Философские тексты на русском — с источниками и примечаниями.' },
-  { slug: 'essays', label: 'Тексты', singular: 'Текст', description: 'Статьи и эссе: от внимательного чтения к собственной мысли.' },
-  { slug: 'columns', label: 'Колонки', singular: 'Колонка', description: 'Короткие заметки, вопросы и реплики друзей и гостей.' }
+  { slug: 'translations', label: 'Переводы', singular: 'Перевод', description: 'Философские тексты в переводе на русский.' },
+  { slug: 'essays', label: 'Тексты', singular: 'Текст', description: 'Авторские статьи и эссе.' },
+  { slug: 'columns', label: 'Колонки', singular: 'Колонка', description: 'Короткие заметки друзей и гостей.' }
 ];
 export const siteUrl = 'https://das-kefirt.github.io';
 export const escapeHtml = (value) => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
