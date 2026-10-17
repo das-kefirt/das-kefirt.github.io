@@ -1,0 +1,6 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleList from '../components/ArticleList.astro';
+import { articles } from '../lib/articles.mjs';
+---
+<Base title="Архив"><div class="wrap page-section"><header class="page-heading"><span class="eyebrow">Все публикации</span><h1>Архив<span class="period">.</span></h1><p>Переводы, статьи и колонки — от новых к более ранним.</p></header><ArticleList articles={articles} /></div></Base>

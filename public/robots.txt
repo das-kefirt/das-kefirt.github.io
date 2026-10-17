@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://das-kefirt.github.io/sitemap.xml

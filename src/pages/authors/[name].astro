@@ -1,0 +1,9 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { articles } from '../../lib/articles.mjs';
+import { authorSlug } from '../../lib/content.mjs';
+export function getStaticPaths() { return [...new Set(articles.flatMap(a => [a.author, a.translator].filter(Boolean)))].map(name => ({ params: { name: authorSlug(name) }, props: { name } })); }
+const { name } = Astro.props;
+---
+<Base title={name}><div class="wrap page-section"><header class="page-heading"><span class="eyebrow">Авторы и переводчики</span><h1>{name}</h1></header><ArticleList articles={articles.filter(a => a.author === name || a.translator === name)} /></div></Base>

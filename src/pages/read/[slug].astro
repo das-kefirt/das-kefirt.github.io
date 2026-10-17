@@ -1,0 +1,7 @@
+---
+import Reader from '../../components/Reader.astro';
+import { articles } from '../../lib/articles.mjs';
+export function getStaticPaths() { return articles.map(article => ({ params: { slug: article.slug }, props: { article } })); }
+const { article } = Astro.props;
+---
+<Reader article={article} />

@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { compileArticle, sections, authorSlug } from '../lib/content.mjs';
+import { formatDate } from '../lib/articles.mjs';
+import site from '../data/site.json';
+const { article, demo = false } = Astro.props;
+const rendered = compileArticle(article);
+const section = sections.find(s => s.slug === article.section);
+const telegram = /^https:\/\/t\.me\//.test(article.discussion || '') ? article.discussion : site.telegram;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const schema = { '@context': 'https://schema.org', '@type': 'Article', headline: article.title, description: article.description, datePublished: new Date(article.date).toISOString(), author: { '@type': 'Person', name: article.author }, publisher: { '@type': 'Organization', name: 'das kefirt' }, mainEntityOfPage: canonical };
+---
+<Base title={article.title} description={article.description} noindex={demo} article>
+  {!demo && <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />}
+  <article class="reader wrap" data-pagefind-body={!demo ? '' : undefined} data-pagefind-ignore={demo ? '' : undefined}>
+    {demo && <div class="demo-banner">Образец оформления · не публикация журнала</div>}
+    <header class="reader-header">
+      <a class="eyebrow" href={`/${section.slug}/`}>{section.singular}</a>
+      <h1 data-pagefind-meta="title">{article.title}</h1>
+      <p class="reader-deck">{article.description}</p>
+      <div class="reader-byline">{demo ? <span>{article.author}</span> : <a href={`/authors/${authorSlug(article.author)}/`}>{article.author}</a>}{article.translator && <span>Перевод: {article.translator}</span>}<time datetime={new Date(article.date).toISOString()}>{formatDate(article.date)}</time><span>{rendered.minutes} мин чтения</span></div>
+    </header>
+    <div class="reader-grid">
+      <aside class="reader-sidebar" data-pagefind-ignore><details open><summary>В этом тексте</summary><nav aria-label="Оглавление">{rendered.headings.map(h => <a href={`#${h.id}`}>{h.title}</a>)}{rendered.notes.length > 0 && <a href="#notes">Примечания</a>}{rendered.bibliography.length > 0 && <a href="#bibliography">Литература</a>}</nav></details></aside>
+      <div class="reader-content">
+        <div class="prose" set:html={rendered.html} />
+        {article.source && <section class="source-block"><h2 class="eyebrow">Источник / сведения о тексте</h2><p>{article.source}</p></section>}
+        {rendered.notes.length > 0 && <section class="notes-section" id="notes" role="doc-endnotes"><h2>Примечания</h2><ol>{rendered.notes.map(note => <li id={`note-${note.id}`}><span class="note-kind">{note.kind || 'Примечание'}</span><div class="note-content" set:html={note.html} /><div class="note-backlinks">{note.refs.map((ref, i) => <a href={`#${ref}`} aria-label={`Вернуться к упоминанию ${i + 1} примечания ${note.number}`}>↩{note.refs.length > 1 ? ` ${i + 1}` : ' К тексту'}</a>)}</div></li>)}</ol></section>}
+        {rendered.bibliography.length > 0 && <section class="bibliography" id="bibliography"><h2>Литература</h2><ol>{rendered.bibliography.map(html => <li set:html={html} />)}</ol></section>}
+        <div class="reader-end" data-pagefind-ignore><a href={telegram}>{article.discussion ? 'Обсудить этот текст' : 'Перейти в Telegram'} ↗</a><button type="button" id="copy-link">Скопировать ссылку</button><span id="copy-status" role="status" aria-live="polite"></span></div>
+      </div>
+    </div>
+  </article>
+  <dialog id="note-dialog" class="note-dialog" aria-labelledby="note-dialog-title"><div class="note-dialog-top"><span id="note-dialog-title"></span><button type="button" id="close-note">Закрыть ×</button></div><div id="note-dialog-content"></div><a id="note-full-link" href="#notes">Все примечания ↓</a></dialog>
+  <script>
+    const dialog = document.querySelector<HTMLDialogElement>('#note-dialog');
+    const title = document.getElementById('note-dialog-title');
+    const content = document.getElementById('note-dialog-content');
+    const fullLink = document.querySelector<HTMLAnchorElement>('#note-full-link');
+    let lastRef: HTMLElement | null = null;
+    document.querySelectorAll<HTMLAnchorElement>('.note-ref').forEach(ref => ref.addEventListener('click', event => {
+      const note = document.getElementById(ref.dataset.note || '');
+      if (!note || !dialog || !content || !title || !fullLink || !dialog.showModal) return;
+      event.preventDefault(); lastRef = ref;
+      title.textContent = `${ref.textContent}. ${note.querySelector('.note-kind')?.textContent || 'Примечание'}`;
+      content.innerHTML = note.querySelector('.note-content')?.innerHTML || '';
+      fullLink.href = ref.getAttribute('href') || '#notes';
+      dialog.showModal();
+    }));
+    document.getElementById('close-note')?.addEventListener('click', () => dialog?.close());
+    dialog?.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
+    dialog?.addEventListener('close', () => lastRef?.focus({ preventScroll: true }));
+    fullLink?.addEventListener('click', () => dialog?.close());
+    document.getElementById('copy-link')?.addEventListener('click', async () => {
+      const status = document.getElementById('copy-status');
+      try { await navigator.clipboard.writeText(location.origin + location.pathname); if (status) status.textContent = 'Ссылка скопирована'; }
+      catch { if (status) status.textContent = 'Скопируйте адрес из строки браузера'; }
+    });
+  </script>
+</Base>

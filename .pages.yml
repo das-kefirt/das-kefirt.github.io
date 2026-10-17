@@ -1,0 +1,150 @@
+media:
+  input: public/media
+  output: /media
+  extensions: [png, jpg, jpeg, webp, gif, pdf]
+  rename: safe
+content:
+  - name: posts
+    label: Публикации
+    type: collection
+    path: src/content/posts
+    format: yaml-frontmatter
+    filename: "{fields.slug}.md"
+    exclude: [reading-example.md]
+    view:
+      primary: title
+      fields: [title, author, section, published]
+      sort: date
+      order: desc
+    fields:
+      - name: title
+        label: Заголовок
+        type: string
+        required: true
+      - name: slug
+        label: Адрес текста
+        description: "Латинские буквы, цифры и дефисы. Например: filosofiya-v-sitsilii. После публикации не меняйте имя файла: оно определяет адрес."
+        type: string
+        required: true
+        pattern: "^[a-z0-9][a-z0-9-]*$"
+      - name: description
+        label: Краткое описание
+        type: text
+        required: true
+      - name: author
+        label: Автор оригинального текста
+        type: string
+        required: true
+      - name: translator
+        label: Переводчик (если есть)
+        type: string
+      - name: section
+        label: Раздел
+        type: select
+        required: true
+        options:
+          values:
+            - name: translations
+              label: Переводы
+            - name: essays
+              label: Тексты
+            - name: columns
+              label: Колонки
+      - name: date
+        label: Дата публикации
+        type: date
+        required: true
+      - name: published
+        label: Опубликовать на сайте
+        type: boolean
+        description: "После включения и сохранения текст появится на сайте после сборки. Выключенные тексты не попадают на сайт, но файлы публичного GitHub-репозитория видны всем — это не приватные черновики."
+      - name: tags
+        label: Темы
+        type: string
+        list: true
+      - name: body
+        label: Основной текст
+        type: rich-text
+        description: "Для ссылки на отдельное примечание вставьте {{note:ID}}, например {{note:termin}}. ID указывается в списке примечаний ниже."
+        options:
+          format: markdown
+          switcher: true
+      - name: source
+        label: Источник перевода / сведения об оригинале
+        type: text
+      - name: notes
+        label: Примечания
+        type: object
+        list: true
+        fields:
+          - name: id
+            label: ID примечания
+            type: string
+            required: true
+            pattern: "^[a-z0-9_-]+$"
+            description: "Уникальный внутри статьи, например termin. В тексте используйте {{note:termin}}. Номер назначается автоматически."
+          - name: kind
+            label: Вид примечания
+            type: select
+            options:
+              values: [Примечание автора, Примечание переводчика, Примечание редакции]
+          - name: text
+            label: Текст примечания
+            type: rich-text
+            required: true
+      - name: bibliography
+        label: Литература
+        type: object
+        list: true
+        fields:
+          - name: text
+            label: Библиографическое описание и ссылка
+            type: rich-text
+            required: true
+      - name: discussion
+        label: Пост для обсуждения в Telegram
+        type: string
+        description: "Необязательно. Полная ссылка на конкретный пост t.me."
+  - name: friends
+    label: Ресурсы друзей
+    type: file
+    path: src/data/friends.json
+    format: json
+    fields:
+      - name: resources
+        label: Ресурсы
+        type: object
+        list: true
+        fields:
+          - name: title
+            label: Название
+            type: string
+            required: true
+          - name: url
+            label: Ссылка
+            type: string
+            required: true
+            pattern: "^https?://"
+          - name: description
+            label: Описание
+            type: text
+            required: true
+  - name: site
+    label: Настройки журнала
+    type: file
+    path: src/data/site.json
+    format: json
+    fields:
+      - name: title
+        label: Название
+        type: string
+      - name: description
+        label: Описание для поисковиков
+        type: text
+      - name: intro
+        label: Короткое вступление на главной
+        type: text
+      - name: telegram
+        label: Telegram-канал
+        type: string
+        pattern: "^https://t\\.me/"

@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleList from '../components/ArticleList.astro';
+import site from '../data/site.json';
+import { articles } from '../lib/articles.mjs';
+import { sections } from '../lib/content.mjs';
+---
+<Base>
+  <div class="wrap">
+    <section class="masthead" aria-labelledby="masthead-title">
+      <div class="masthead-kicker"><span class="eyebrow">Независимый философский журнал</span><a href={site.telegram}>Из Telegram — на поля сайта ↗</a></div>
+      <h1 id="masthead-title">das kefirt<span class="period">.</span></h1>
+      <div class="masthead-bottom"><span class="small-label">Читать. Переводить. Обсуждать.</span><p>{site.intro}</p></div>
+    </section>
+    {articles.length ? <section class="home-latest"><div class="section-heading"><h2>Последние публикации</h2><a href="/archive/">Весь архив ↗</a></div><ArticleList articles={articles.slice(0, 5)} /></section> :
+    <section class="opening-note">
+      <div class="opening-side"><span class="eyebrow">Начало</span><span class="opening-symbol" aria-hidden="true">*</span></div>
+      <div class="opening-main"><h2>Место для<br /><em>долгого чтения.</em></h2><p>Здесь будут жить переводы, собственные тексты и гостевые колонки das kefirt. С примечаниями, источниками и пространством для мысли.</p><a class="text-link" href="/about/">О проекте <span aria-hidden="true">↗</span></a></div>
+      <aside class="opening-aside"><span class="eyebrow">Пока собираем архив</span><p>Новые записи и разговоры — в нашем Telegram.</p><a href={site.telegram} class="text-link">@daskefirt ↗</a><div class="small-rule"></div><a href="/preview/" class="sample-link">Образец страницы чтения <span aria-hidden="true">→</span></a></aside>
+    </section>}
+    <section class="section-directory" aria-labelledby="sections-title"><div class="section-heading"><h2 id="sections-title">Разделы</h2><span class="muted">Несколько способов говорить о философии</span></div>
+      {[...sections, { slug: 'friends', label: 'Друзья', description: 'Каналы, журналы и другие проекты, к которым хочется возвращаться.' }].map((item, i) => <a class="directory-row" href={`/${item.slug}/`}><span class="directory-index">0{i + 1}</span><h3>{item.label}</h3><p>{item.description}</p><span class="directory-arrow" aria-hidden="true">↗</span></a>)}
+    </section>
+    <section class="telegram-strip"><p>Разговор продолжается<br /><em>в Telegram.</em></p><a href={site.telegram}>Перейти в канал <span aria-hidden="true">↗</span></a></section>
+  </div>
+</Base>
