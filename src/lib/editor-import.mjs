@@ -3,9 +3,15 @@ import { slugify } from './editor-core.mjs';
 
 export function createMarkdownConverter() {
   const converter = new TurndownService({headingStyle:'atx', bulletListMarker:'-', emDelimiter:'*', strongDelimiter:'**'});
-  converter.addRule('plainTocHeading', {
-    filter: node => /^H[23]$/.test(node.nodeName) && node.classList.contains('toc-plain'),
-    replacement: (content, node) => `\n\n${'#'.repeat(Number(node.nodeName.slice(1)))} ${content.trim()} <!--toc-plain-->\n\n`
+  converter.addRule('outlineHeading', {
+    filter: node => /^H[23]$/.test(node.nodeName),
+    replacement: (content, node) => {
+      const level = Number(node.nodeName.slice(1));
+      const plain = node.classList.contains('toc-plain') ? ' <!--toc-plain-->' : '';
+      const title = (node.getAttribute('data-toc-title') || '').trim();
+      const label = title ? ` <!--toc-title:${encodeURIComponent(title)}-->` : '';
+      return `\n\n${'#'.repeat(level)} ${content.trim()}${plain}${label}\n\n`;
+    }
   });
   converter.addRule('noteMarker', {
     filter: node => node.nodeName === 'SPAN' && node.hasAttribute('data-note-id'),

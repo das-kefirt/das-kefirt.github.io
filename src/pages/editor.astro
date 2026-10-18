@@ -41,6 +41,10 @@ import '../styles/editor.css';
         <button type="button" data-command="undo" title="Отменить">↶</button><button type="button" data-command="redo" title="Повторить">↷</button>
       </div>
       <div id="body-editor" class="prose editor-body" contenteditable="true" role="textbox" aria-label="Основной текст" aria-multiline="true" spellcheck="true" data-placeholder="Напиши текст или загрузи документ Word…"></div>
+      <details class="editor-panel" id="outline-panel" open><summary>Оглавление <span class="editor-hint">названия можно менять независимо от текста</span></summary>
+        <p class="editor-hint">Добавляй пункты кнопками «Заголовок» или «В оглавление». Ниже можно изменить только название ссылки в оглавлении — текст статьи останется прежним. Пустое поле означает исходный текст.</p>
+        <div id="outline-editor"></div>
+      </details>
       <details class="editor-panel" open><summary>Примечания <span id="note-count">0</span></summary><p class="editor-hint">Нажми «+ Сноска» над текстом, чтобы добавить примечание в месте курсора. Номера на странице назначаются автоматически. В тексте примечаний можно использовать *курсив*, **жирный** и [ссылки](https://…).</p><div id="notes-editor"></div></details>
       <details class="editor-panel"><summary>Источник, литература и темы</summary><div class="editor-fields">
         <label class="full">Источник оригинала<textarea id="field-source" rows="3"></textarea></label>

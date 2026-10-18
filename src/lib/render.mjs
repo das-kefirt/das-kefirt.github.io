@@ -5,6 +5,27 @@ export function compileArticle(article, clean) {
   const used = [];
   const refs = new Map();
   const headings = [];
+  // Markdown treats trailing HTML comments as separate tokens. Remove metadata
+  // before parsing and keep it in the same order as the actual headings.
+  const headingMetadata = [];
+  let fence = null;
+  const body = (article.body || '').split(/\r?\n/).map(line => {
+    const matchFence = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+    if (matchFence) {
+      if (!fence) fence = { character: matchFence[1][0], length: matchFence[1].length };
+      else if (matchFence[1][0] === fence.character && matchFence[1].length >= fence.length) fence = null;
+      return line;
+    }
+    if (fence || !/^#{1,6}[ \t]+\S/.test(line)) return line;
+    const plain = /<!--toc-plain-->/.test(line);
+    const encoded = /<!--toc-title:([^<>]*)-->/.exec(line)?.[1];
+    let label = '';
+    if (encoded) {
+      try { label = decodeURIComponent(encoded).trim(); } catch { /* invalid label is ignored */ }
+    }
+    headingMetadata.push({plain, label});
+    return line.replace(/[ \t]*<!--toc-plain-->/g, '').replace(/[ \t]*<!--toc-title:[^<>]*-->/g, '');
+  }).join('\n');
   const markdown = new Marked({ gfm: true });
   markdown.use({ extensions: [{
     name: 'separateNote', level: 'inline',
@@ -25,15 +46,15 @@ export function compileArticle(article, clean) {
   }], renderer: {
     heading({ tokens, depth }) {
       const level = Math.min(Math.max(depth, 2), 3);
-      let title = this.parser.parseInline(tokens);
-      const plainToc = /<!--\s*toc-plain\s*-->/.test(title);
-      if (plainToc) title = title.replace(/\s*<!--\s*toc-plain\s*-->/g, '');
+      const title = this.parser.parseInline(tokens);
+      const metadata = headingMetadata[headings.length] || {plain: false, label: ''};
       const id = `section-${headings.length + 1}`;
-      headings.push({ id, title: title.replace(/<[^>]*>/g, '') });
-      return `<h${level}${plainToc ? ' class="toc-plain"' : ''} id="${id}">${title}</h${level}>`;
+      const originalTitle = title.replace(/<[^>]*>/g, '');
+      headings.push({ id, title: metadata.label || originalTitle, originalTitle, tocLabel: metadata.label, plain: metadata.plain });
+      return `<h${level}${metadata.plain ? ' class="toc-plain"' : ''} id="${id}">${title}</h${level}>`;
     }
   } });
-  const html = clean(markdown.parse(article.body));
+  const html = clean(markdown.parse(body));
   return {
     html, headings,
     notes: used.map((n, index) => ({ ...n, number: index + 1, html: renderMarkdown(n.text), refs: refs.get(n.id) })),

@@ -3,3 +3,6 @@
 .editor-toolbar .alignment-control{display:flex;flex-direction:row;align-items:center;gap:8px;font-size:11px;color:var(--muted);border-right:1px solid var(--line);padding-right:12px;margin-right:4px}.editor-toolbar .alignment-control select{font-size:12px;width:auto;padding:7px 9px;background:var(--paper)}@media(max-width:720px){.editor-toolbar .alignment-control{width:100%;border-right:0;border-bottom:1px solid var(--line);padding:2px 0 9px;margin-bottom:4px}}
 
 #cover-preview{margin-top:20px}#cover-image{display:block;width:100%;height:auto;max-height:420px;object-fit:contain;object-position:left;background:var(--wash)}.cover-panel>summary>span{margin-left:8px}.cover-panel .editor-fields{margin-bottom:8px}#storage-status{border-top:1px solid var(--line);padding-top:14px}#article-preview .article-cover{margin:0 0 30px}
+
+/* Editable outline labels; labels change navigation only, not the article body. */
+.outline-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.outline-source{font-size:13px;overflow-wrap:anywhere}.outline-row label{font-size:12px}.outline-row input{width:100%}@media(max-width:720px){.outline-row{grid-template-columns:1fr;gap:7px}}

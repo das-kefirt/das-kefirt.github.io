@@ -80,3 +80,23 @@ test('Plain TOC heading appears in outline without typographic heading markup',(
   assert.match(rendered.html,/<h2 class="toc-plain" id="section-1">Сицилийская философия<\/h2>/);
   assert.doesNotMatch(rendered.html,/<!--toc-plain-->/);
 });
+
+test('Outline label may differ from the original heading and survives Markdown round trips',()=>{
+  const label='От переводчика: название в навигации';
+  const md=createMarkdownConverter().turndown(`<p>Текст</p><h2 data-toc-title="${label}">Предисловие от переводчика:</h2><p>Продолжение.</p>`);
+  assert.match(md,/<!--toc-title:/);
+  const compiled=compileArticle({...article(),body:md,notes:[]});
+  assert.equal(compiled.headings[0].title,label);
+  assert.equal(compiled.headings[0].originalTitle,'Предисловие от переводчика:');
+  assert.match(compiled.html,/<h2 id="section-1">Предисловие от переводчика:<\/h2>/);
+  assert.doesNotMatch(compiled.html,/toc-title|От переводчика: название/);
+  const reimport=createMarkdownConverter().turndown(compiled.html.replace('id="section-1"',`data-toc-title="${label}"`));
+  assert.equal(compileArticle({...article(),body:reimport,notes:[]}).headings[0].title,label);
+});
+
+test('Heading markers inside code blocks do not create outline items',()=>{
+  const code='~~~md\n## Not a heading <!--toc-title:Wrong-->\n~~~\n\n## Visible <!--toc-title:Right-->';
+  const compiled=compileArticle({...article(),body:code,notes:[]});
+  assert.equal(compiled.headings.length,1);
+  assert.equal(compiled.headings[0].title,'Right');
+});

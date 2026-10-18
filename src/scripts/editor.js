@@ -27,7 +27,7 @@ function blankArticle() {
 function clean(html) {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS:['p','br','div','h1','h2','h3','h4','strong','b','em','i','u','s','del','blockquote','pre','code','ul','ol','li','a','hr','sup','sub','span','table','thead','tbody','tr','th','td','img'],
-    ALLOWED_ATTR:['href','src','id','class','data-note','data-note-id','aria-label','role','alt','title'],
+    ALLOWED_ATTR:['href','src','id','class','data-note','data-note-id','data-toc-title','aria-label','role','alt','title'],
     ALLOW_DATA_ATTR:false,
   });
 }
@@ -90,7 +90,28 @@ function paintBody() {
     span.title = 'Примечание — редактируется под текстом';
     link.parentElement.tagName === 'SUP' ? link.parentElement.replaceWith(span) : link.replaceWith(span);
   }
+  for(const [index,heading] of [...editor.querySelectorAll('h2,h3')].entries()){
+    const label=rendered.headings[index]?.tocLabel;
+    if(label)heading.dataset.tocTitle=label;
+  }
   savedRange = null;
+}
+function paintOutlineEditor() {
+  const root=$('outline-editor');root.replaceChildren();
+  const headings=[...editor.querySelectorAll('h2,h3')];
+  if(!headings.length){const empty=document.createElement('p');empty.className='editor-hint';empty.textContent='Пунктов пока нет. Выдели абзац в тексте и нажми «Заголовок» или «В оглавление».';root.append(empty);return;}
+  headings.forEach((heading,index)=>{
+    const row=document.createElement('div');row.className='outline-row';
+    const source=document.createElement('div');source.className='outline-source';source.textContent=`${index+1}. В тексте: ${heading.textContent.trim()}`;
+    const label=document.createElement('label');label.textContent='Название в оглавлении';
+    const input=document.createElement('input');input.type='text';input.value=heading.dataset.tocTitle||'';input.placeholder=heading.textContent.trim();input.setAttribute('aria-label',`Название пункта оглавления ${index+1}`);
+    input.addEventListener('input',()=>{
+      const value=input.value.trim();
+      if(value)heading.dataset.tocTitle=value;else heading.removeAttribute('data-toc-title');
+      updateBody(false);
+    });
+    label.append(input);row.append(source,label);root.append(row);
+  });
 }
 function fillForm() {
   for (const key of fields) $(`field-${key}`).value = state.article[key] || '';
@@ -103,7 +124,7 @@ function fillForm() {
   $('field-bibliography').value = state.article.bibliography.map(n => typeof n === 'string' ? n : n.text).join('\n\n');
   $('cover-alt').value=state.article.cover?.alt||'';
   $('cover-caption').value=state.article.cover?.caption||'';
-  paintBody(); paintNotes(); paintCover(); showTab(false);
+  paintBody(); paintNotes(); paintCover(); paintOutlineEditor(); showTab(false);
 }
 function paintCover() {
   const cover=state.article.cover;
@@ -167,9 +188,10 @@ function paintNotes() {
     actions.append(insert,remove); row.append(header,textarea,actions); root.append(row);
   }
 }
-function updateBody() {
+function updateBody(refreshOutline = true) {
   state.article.body = converter.turndown(clean(editor.innerHTML));
   saveDraft();
+  if(refreshOutline!==false)paintOutlineEditor();
 }
 function rememberSelection() {
   const selection=window.getSelection();
