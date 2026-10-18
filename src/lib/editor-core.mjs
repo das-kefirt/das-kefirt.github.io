@@ -8,6 +8,7 @@ export function slugify(value) {
   return [...value.toLowerCase()].map(c => alphabet[c] ?? c).join('').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0,100).replace(/-$/, '');
 }
 export function validateArticle(a) {
+  if (a.textAlign && !['left','center','right','justify'].includes(a.textAlign)) throw new Error('Выбери выравнивание текста.');
   for (const [key,label] of [['title','название'],['author','автора'],['description','краткое описание'],['body','текст']]) {
     if (typeof a[key] !== 'string' || !a[key].trim()) throw new Error(`Укажи ${label}.`);
   }
@@ -35,7 +36,7 @@ export function deserializeArticle(raw, filename = '') {
   if (!match) throw new Error('Это не файл публикации сайта: отсутствуют поля в начале файла.');
   const data = load(match[1], {schema:JSON_SCHEMA});
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Некорректные поля публикации.');
-  const a = { title:'', slug:filename.replace(/\.md$/, ''), author:'', translator:'', description:'', section:'translations', date:'', source:'', discussion:'', tags:[], ...data, body:match[2].trim(), notes:data.notes || [], bibliography:data.bibliography || [] };
+  const a = { title:'', slug:filename.replace(/\.md$/, ''), author:'', translator:'', description:'', section:'translations', date:'', source:'', discussion:'', textAlign:'left', tags:[], ...data, body:match[2].trim(), notes:data.notes || [], bibliography:data.bibliography || [] };
   if (a.demo) throw new Error('Образец оформления не предназначен для редактирования здесь.');
   if (!Array.isArray(a.notes) || !Array.isArray(a.bibliography) || !Array.isArray(a.tags)) throw new Error('Некорректный формат примечаний, литературы или тем.');
   for (const n of a.notes) if (!n || typeof n.id !== 'string' || typeof n.text !== 'string') throw new Error('Некорректное примечание.');

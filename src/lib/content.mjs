@@ -45,7 +45,7 @@ export function parseArticle(raw, filename) {
     if (typeof note.text !== 'string') throw new Error(`${filename}: отсутствует текст примечания ${note.id}`);
     ids.add(note.id);
   }
-  return { ...data, slug, published, body: content, notes, tags: data.tags || [], bibliography: data.bibliography || [] };
+  return { ...data, textAlign: ['left','center','right','justify'].includes(data.textAlign) ? data.textAlign : 'left', slug, published, body: content, notes, tags: data.tags || [], bibliography: data.bibliography || [] };
 }
 
 export const compileArticle = article => compileWithSanitizer(article, clean);

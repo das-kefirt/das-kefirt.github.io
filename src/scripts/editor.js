@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id);
 const storageKey = 'das-kefirt-editor-draft-v1';
 const markdown = new Marked({gfm:true});
 const converter = createMarkdownConverter();
-const fields = ['title','author','translator','section','date','description','slug','source','discussion'];
+const fields = ['title','author','translator','section','date','description','slug','source','discussion','textAlign'];
 const editor = $('body-editor');
 const status = $('editor-status');
 let savedRange = null;
@@ -21,7 +21,7 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function blankArticle() {
-  return {title:'',slug:'',description:'',author:'',translator:'',section:'translations',date:today(),body:'',source:'',discussion:'',tags:[],notes:[],bibliography:[]};
+  return {title:'',slug:'',description:'',author:'',translator:'',section:'translations',date:today(),body:'',source:'',discussion:'',textAlign:'left',tags:[],notes:[],bibliography:[]};
 }
 function clean(html) {
   return DOMPurify.sanitize(html, {
@@ -38,6 +38,7 @@ function say(message, error = false) {
 function errorMessage(e) { return e?.message || 'Не удалось выполнить действие. Черновик остаётся в редакторе.'; }
 function readFields() {
   for (const key of fields) state.article[key] = $(`field-${key}`).value.trim();
+  editor.dataset.textAlign = state.article.textAlign;
   state.article.tags = $('field-tags').value.split(',').map(t => t.trim()).filter(Boolean);
   state.article.bibliography = $('field-bibliography').value.split(/\n\s*\n/).map(text => text.trim()).filter(Boolean).map(text => ({text}));
   return state.article;
@@ -68,6 +69,8 @@ function paintBody() {
 }
 function fillForm() {
   for (const key of fields) $(`field-${key}`).value = state.article[key] || '';
+  $('field-textAlign').value = state.article.textAlign || 'left';
+  editor.dataset.textAlign = $('field-textAlign').value;
   $('field-slug').disabled = Boolean(state.origin);
   if (state.article.slug) $('field-slug').dataset.manual='true';
   else delete $('field-slug').dataset.manual;
@@ -123,6 +126,7 @@ function insertNoteMarker(id) {
   rememberSelection();updateBody();
 }
 function showTab(preview) {
+  document.dispatchEvent(new Event('kefirt:content-change'));
   if(preview) {
     try { renderPreview(); } catch(e) {say(errorMessage(e),true);return;}
   }
@@ -134,14 +138,15 @@ function renderPreview() {
   const h=document.createElement('h1');h.textContent=a.title||'Без названия';
   const deck=document.createElement('p');deck.className='preview-description';deck.textContent=a.description;
   const byline=document.createElement('p');byline.className='preview-byline';byline.textContent=[a.author,a.translator&&`Перевод: ${a.translator}`,a.date,`${rendered.minutes} мин чтения`].filter(Boolean).join(' · ');
-  const body=document.createElement('div');body.className='prose';body.innerHTML=rendered.html;
+  const body=document.createElement('div');body.className='prose';body.dataset.textAlign=a.textAlign;body.innerHTML=rendered.html;
   // Preview IDs are scoped so copied article anchors cannot target the editor UI.
   for(const node of body.querySelectorAll('[id]'))node.id=`preview-${node.id}`;
+  for(const node of body.querySelectorAll('[data-note]'))node.dataset.note=`preview-${node.dataset.note}`;
   for(const node of body.querySelectorAll('a[href^="#"]'))node.setAttribute('href',`#preview-${node.getAttribute('href').slice(1)}`);
   root.append(h,deck,byline,body);
   if(a.source){const source=document.createElement('section');source.className='source-block';const heading=document.createElement('h2');heading.className='eyebrow';heading.textContent='Источник / сведения о тексте';const text=document.createElement('p');text.textContent=a.source;source.append(heading,text);root.append(source);}
   if(rendered.notes.length){const section=document.createElement('section');section.className='notes-section';const heading=document.createElement('h2');heading.textContent='Примечания';const ol=document.createElement('ol');
-    for(const note of rendered.notes){const li=document.createElement('li');li.id=`preview-note-${note.id}`;const label=document.createElement('span');label.className='note-kind';label.textContent=note.kind||'Примечание';const content=document.createElement('div');content.innerHTML=note.html;li.append(label,content);for(const ref of note.refs){const a=document.createElement('a');a.href=`#preview-${ref}`;a.textContent='↩ К тексту';li.append(a);}ol.append(li);}section.append(heading,ol);root.append(section);}
+    for(const note of rendered.notes){const li=document.createElement('li');li.id=`preview-note-${note.id}`;const label=document.createElement('span');label.className='note-kind';label.textContent=note.kind||'Примечание';const content=document.createElement('div');content.className='note-content';content.innerHTML=note.html;li.append(label,content);for(const ref of note.refs){const a=document.createElement('a');a.href=`#preview-${ref}`;a.textContent='↩ К тексту';li.append(a);}ol.append(li);}section.append(heading,ol);root.append(section);}
   if(rendered.bibliography.length){const section=document.createElement('section');section.className='bibliography';const heading=document.createElement('h2');heading.textContent='Литература';const ol=document.createElement('ol');for(const html of rendered.bibliography){const li=document.createElement('li');li.innerHTML=html;ol.append(li);}section.append(heading,ol);root.append(section);}
 }
 function download(published) {

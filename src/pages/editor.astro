@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import NotePopover from '../components/NotePopover.astro';
 import '../styles/editor.css';
 ---
 <Base title="Редактор" description="Редактор публикаций das kefirt." noindex>
@@ -26,6 +27,7 @@ import '../styles/editor.css';
         <label class="full">Адрес текста<input id="field-slug" name="slug" autocomplete="off" placeholder="filosofiya-na-sitsilii" /><span class="editor-hint">После публикации адрес закреплён за текстом.</span></label>
       </form>
       <div class="editor-toolbar" role="toolbar" aria-label="Форматирование текста">
+        <label class="alignment-control">Весь текст<select id="field-textAlign" aria-label="Выравнивание всего текста"><option value="left">По левому краю</option><option value="center">По центру</option><option value="right">По правому краю</option><option value="justify">По ширине</option></select></label>
         <button type="button" data-command="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button><button type="button" data-command="italic" title="Курсив (Ctrl+I)"><i>К</i></button>
         <button type="button" data-block="p">Абзац</button><button type="button" data-block="h2">Заголовок</button><button type="button" data-block="blockquote">Цитата</button>
         <button type="button" data-command="insertUnorderedList">Список</button><button type="button" id="insert-link">Ссылка</button><button type="button" id="insert-note">+ Сноска</button>
@@ -50,5 +52,6 @@ import '../styles/editor.css';
     <details class="editor-panel"><summary>Что сохраняется при импорте Word</summary><p>Импорт переносит абзацы, заголовки, списки, жирный, курсив, ссылки, обычные и концевые сноски. Шрифт и размеры задаёт оформление сайта. Изображения автоматически не загружаются; редактор предупредит, если они есть. Формулы, сложные таблицы и правки Word требуют отдельной проверки. Перед импортом лучше принять или отклонить исправления в Word.</p></details>
   </section>
   <dialog id="publish-dialog" class="editor-dialog"><h2>Опубликовать текст?</h2><p id="publish-summary"></p><p id="publish-address" class="editor-hint"></p><p>Текст и примечания станут доступны в публичном репозитории. После успешной сборки появится страница сайта.</p><div class="editor-actions"><button id="confirm-publish" class="editor-button primary" type="button">Опубликовать</button><button id="cancel-publish" class="editor-button" type="button">Вернуться к тексту</button></div></dialog>
+  <NotePopover />
   <script>import '../scripts/editor.js';</script>
 </Base>

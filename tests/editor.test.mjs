@@ -32,11 +32,12 @@ test('Import sanitizes hostile links and scripts; images have visible placeholde
   assert.match(imported.body,/Изображение из Word/);
 });
 test('Downloaded drafts round-trip punctuation, note metadata, Cyrillic and revision; publishing strips private editor metadata',()=>{
-  const a={...article(),_editor:{slug:'filosofiya',sha:'a'.repeat(40)}};
+  const a={...article(),textAlign:'justify',_editor:{slug:'filosofiya',sha:'a'.repeat(40)}};
   const raw=serializeArticle(a);const loaded=deserializeArticle(raw);
   assert.equal(loaded.body,a.body);assert.equal(loaded.published,false);assert.deepEqual(loaded.notes,a.notes);assert.deepEqual(loaded._editor,a._editor);
   const publicRaw=serializeArticle(a,true);assert.doesNotMatch(publicRaw,/_editor/);
   const parsed=parseArticle(publicRaw,'filosofiya.md');assert.equal(parsed.published,true);assert.equal(compileArticle(parsed).notes.length,1);
+  assert.equal(parsed.textAlign,'justify');assert.equal(loaded.textAlign,'justify');
   assert.equal(slugify('Философия на Сицилии'),'filosofiya-na-sitsilii');
 });
 test('Validation rejects missing/unused notes, invalid dates and reserved paths',()=>{

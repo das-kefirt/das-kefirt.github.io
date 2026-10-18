@@ -72,6 +72,19 @@ content:
       - name: source
         label: Источник перевода / сведения об оригинале
         type: text
+      - name: textAlign
+        label: Выравнивание основного текста
+        type: select
+        options:
+          values:
+            - name: left
+              label: По левому краю
+            - name: center
+              label: По центру
+            - name: right
+              label: По правому краю
+            - name: justify
+              label: По ширине
       - name: notes
         label: Примечания
         type: object

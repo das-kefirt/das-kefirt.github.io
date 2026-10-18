@@ -1,0 +1,9 @@
+<aside id="note-popover" class="note-popover" role="dialog" aria-modal="false" aria-labelledby="note-popover-title" hidden data-pagefind-ignore>
+  <div class="note-popover-top"><span id="note-popover-title" data-note-title></span><button type="button" data-note-close aria-label="Закрыть примечание">×</button></div>
+  <div class="note-popover-content" data-note-content></div>
+  <a class="note-popover-full" data-note-full href="#main">К примечанию в конце текста ↓</a>
+</aside>
+<script>
+  import { attachNotePopover } from '../lib/note-popover.mjs';
+  attachNotePopover(document, document.getElementById('note-popover'));
+</script>

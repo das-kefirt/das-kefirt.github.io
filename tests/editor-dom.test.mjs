@@ -8,7 +8,7 @@ test('Editor restores a draft, edits separate notes, previews references and kee
   const section=source.match(/<section class="editor[\s\S]*?<\/section>/)[0];
   const dialog=source.match(/<dialog[\s\S]*?<\/dialog>/)[0];
   const {window}=new JSDOM(section+dialog,{url:'https://das-kefirt.github.io/editor/'});
-  for(const key of ['window','document','localStorage','Option'])globalThis[key]=window[key];
+  for(const key of ['window','document','localStorage','Option','Event'])globalThis[key]=window[key];
   globalThis.confirm=()=>true;
   window.localStorage.setItem('das-kefirt-editor-draft-v1',JSON.stringify({article:{title:'Проверка',slug:'proverka',description:'Описание',author:'Автор',translator:'',date:'2026-10-18',section:'essays',source:'',discussion:'',tags:[],body:'Текст {{note:first}}',notes:[{id:'first',text:'Сноска',kind:'Примечание автора'}],bibliography:[]},origin:null}));
   await import('../src/scripts/editor.js');
@@ -17,11 +17,16 @@ test('Editor restores a draft, edits separate notes, previews references and kee
   assert.equal($('body-editor').querySelector('[data-note-id]').dataset.noteId,'first');
   assert.equal($('notes-editor').querySelector('textarea').value,'Сноска');
   $('github-token').value='private-test-token';
+  $('field-textAlign').value='justify';$('field-textAlign').dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.equal($('body-editor').dataset.textAlign,'justify');
   const note=$('notes-editor').querySelector('textarea');note.value='Новое *примечание*';note.dispatchEvent(new window.Event('input',{bubbles:true}));
   const raw=localStorage.getItem('das-kefirt-editor-draft-v1');assert.doesNotMatch(raw,/private-test-token/);assert.equal(JSON.parse(raw).article.notes[0].text,'Новое *примечание*');
+  assert.equal(JSON.parse(raw).article.textAlign,'justify');
   $('preview-tab').click();assert.equal($('preview-panel').hidden,false);assert.equal($('edit-panel').hidden,true);
   assert.equal($('article-preview').querySelector('a.note-ref').getAttribute('href'),'#preview-note-first');
   assert.match($('preview-note-first').innerHTML,/<em>примечание<\/em>/);
+  assert.equal($('article-preview').querySelector('.prose').dataset.textAlign,'justify');
+  assert.equal($('article-preview').querySelector('.note-ref').dataset.note,'preview-note-first');
   $('forget-token').click();assert.equal($('github-token').value,'');
   $('edit-tab').click();assert.equal($('edit-panel').hidden,false);
   window.close();
