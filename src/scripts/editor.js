@@ -31,6 +31,29 @@ function clean(html) {
     ALLOW_DATA_ATTR:false,
   });
 }
+function githubReadOptions() {
+  const token = $('github-token').value.trim();
+  return {
+    cache:'no-store',
+    headers:{
+      Accept:'application/vnd.github+json',
+      ...(token ? {Authorization:`Bearer ${token}`} : {})
+    }
+  };
+}
+function githubReadError(response) {
+  if (response.status === 401) {
+    $('github-connection').open = true;
+    return 'GitHub 401: ключ отклонён. Проверь ключ в разделе «Подключение GitHub».';
+  }
+  if (response.status === 403 || response.status === 429) {
+    $('github-connection').open = true;
+    return $('github-token').value.trim()
+      ? `GitHub ${response.status}: нет доступа или превышен лимит запросов. Проверь права ключа и попробуй позже.`
+      : `GitHub ${response.status}: запрос без ключа отклонён (возможно, достигнут лимит). Открой «Подключение GitHub», вставь ключ и повтори.`;
+  }
+  return `GitHub ${response.status}. Попробуй позже.`;
+}
 function say(message, error = false) {
   status.textContent = message;
   status.dataset.error = String(error);
@@ -103,8 +126,8 @@ async function selectCover(file) {
 async function ensureCoverAsset() {
   const cover=state.article.cover;if(!cover)return null;
   if(state.coverAsset?.src===cover.src){await validateCoverAsset(cover,state.coverAsset);return state.coverAsset;}
-  const response=await fetch(`${API}/contents/public${cover.src}?ref=main`,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
-  if(!response.ok)throw new Error('Не удалось скачать обложку для черновика. Попробуй позже или выбери исходную картинку заново.');
+  const response=await fetch(`${API}/contents/public${cover.src}?ref=main`,githubReadOptions());
+  if(!response.ok)throw new Error(`Не удалось скачать обложку: ${githubReadError(response)}`);
   const file=await response.json();if(file.encoding!=='base64')throw new Error('Не удалось прочитать обложку с GitHub.');
   const asset={src:cover.src,base64:file.content.replace(/\s/g,'')};await validateCoverAsset(cover,asset);
   state.coverAsset=asset;saveDraft();paintCover();return asset;
@@ -243,8 +266,8 @@ async function openArticles() {
   if(locked)return;
   const panel=$('remote-panel'),list=$('remote-list');panel.open=true;list.textContent='Загрузка списка…';
   try {
-    const response=await fetch(`${API}/contents/src/content/posts?ref=main`,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
-    if(!response.ok)throw new Error(`Не удалось получить список: GitHub ${response.status}. Попробуй позже.`);
+    const response=await fetch(`${API}/contents/src/content/posts?ref=main`,githubReadOptions());
+    if(!response.ok)throw new Error(`Не удалось получить список: ${githubReadError(response)}`);
     const entries=await response.json();list.replaceChildren();
     const files=entries.filter(f=>f.type==='file'&&/^[a-z0-9][a-z0-9-]*\.md$/.test(f.name)&&f.name!=='reading-example.md');
     if(!files.length)list.textContent='Публикаций пока нет. Загрузи Word или начни новый текст.';
@@ -255,8 +278,8 @@ async function loadRemote(filename) {
   if(locked||!mayReplace())return;
   locked=true;say('Открываю публикацию…');
   try {
-    const response=await fetch(`${API}/contents/src/content/posts/${filename}?ref=main`,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
-    if(!response.ok)throw new Error(`GitHub не отдал файл (${response.status}).`);
+    const response=await fetch(`${API}/contents/src/content/posts/${filename}?ref=main`,githubReadOptions());
+    if(!response.ok)throw new Error(`Не удалось открыть публикацию: ${githubReadError(response)}`);
     const file=await response.json();if(file.encoding!=='base64')throw new Error('Файл слишком большой для редактора. Скачай его через GitHub.');
     const article=deserializeArticle(decodeContent(file.content),filename);article.slug=filename.replace(/\.md$/,'');
     state={article,origin:{slug:article.slug,sha:file.sha}};fillForm();saveDraft();$('remote-panel').open=false;
