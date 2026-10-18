@@ -36,7 +36,7 @@ import '../styles/editor.css';
       <div class="editor-toolbar" role="toolbar" aria-label="Форматирование текста">
         <label class="alignment-control">Весь текст<select id="field-textAlign" aria-label="Выравнивание всего текста"><option value="left">По левому краю</option><option value="center">По центру</option><option value="right">По правому краю</option><option value="justify">По ширине</option></select></label>
         <button type="button" data-command="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button><button type="button" data-command="italic" title="Курсив (Ctrl+I)"><i>К</i></button>
-        <button type="button" data-block="p">Абзац</button><button type="button" data-block="h2">Заголовок</button><button type="button" data-block="blockquote">Цитата</button>
+        <button type="button" data-block="p">Абзац</button><button type="button" data-block="h2">Заголовок</button><button type="button" data-block="h2" data-toc-plain="true" title="Добавить в оглавление без увеличения и выделения текста">В оглавление</button><button type="button" data-block="blockquote">Цитата</button>
         <button type="button" data-command="insertUnorderedList">Список</button><button type="button" id="insert-link">Ссылка</button><button type="button" id="insert-note">+ Сноска</button>
         <button type="button" data-command="undo" title="Отменить">↶</button><button type="button" data-command="redo" title="Повторить">↷</button>
       </div>

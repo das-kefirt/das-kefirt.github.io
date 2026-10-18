@@ -3,6 +3,10 @@ import { slugify } from './editor-core.mjs';
 
 export function createMarkdownConverter() {
   const converter = new TurndownService({headingStyle:'atx', bulletListMarker:'-', emDelimiter:'*', strongDelimiter:'**'});
+  converter.addRule('plainTocHeading', {
+    filter: node => /^H[23]$/.test(node.nodeName) && node.classList.contains('toc-plain'),
+    replacement: (content, node) => `\n\n${'#'.repeat(Number(node.nodeName.slice(1)))} ${content.trim()} <!--toc-plain-->\n\n`
+  });
   converter.addRule('noteMarker', {
     filter: node => node.nodeName === 'SPAN' && node.hasAttribute('data-note-id'),
     replacement: (_text,node) => `{{note:${node.getAttribute('data-note-id')}}}`

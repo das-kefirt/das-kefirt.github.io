@@ -335,7 +335,22 @@ for(const key of [...fields,'tags','bibliography'])$(`field-${key}`).addEventLis
 });
 for(const button of document.querySelectorAll('[data-command],[data-block]')){
   button.addEventListener('mousedown',event=>event.preventDefault());
-  button.addEventListener('click',()=>{restoreSelection();document.execCommand(button.dataset.block?'formatBlock':button.dataset.command,false,button.dataset.block||null);rememberSelection();updateBody();});
+  button.addEventListener('click',()=>{
+    restoreSelection();
+    document.execCommand(button.dataset.block?'formatBlock':button.dataset.command,false,button.dataset.block||null);
+    if(button.dataset.block==='h2'){
+      const anchor=window.getSelection()?.anchorNode;
+      const element=anchor?.nodeType===1?anchor:anchor?.parentElement;
+      const heading=element?.closest('h2');
+      if(heading&&editor.contains(heading)){
+        if(button.dataset.tocPlain==='true'){
+          heading.classList.add('toc-plain');
+          for(const bold of [...heading.querySelectorAll('b,strong')])bold.replaceWith(...bold.childNodes);
+        }else heading.classList.remove('toc-plain');
+      }
+    }
+    rememberSelection();updateBody();
+  });
 }
 $('insert-link').addEventListener('click',()=>{
   const url=prompt('Адрес ссылки (https://…)');if(!url)return;

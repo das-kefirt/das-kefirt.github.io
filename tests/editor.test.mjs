@@ -70,3 +70,13 @@ test('Authentication and concurrent-write errors are actionable',async()=>{
   let calls=0;
   await assert.rejects(publishArticle({article:article(),token:'test-token',expectedSha:'current',fetcher:async()=>++calls===1?Response.json({sha:'current'}):new Response('',{status:409})}),/Файл изменился/);
 });
+
+test('Plain TOC heading appears in outline without typographic heading markup',()=>{
+  const md=createMarkdownConverter().turndown('<p>Текст</p><h2 class="toc-plain">Сицилийская философия</h2><p>Продолжение.</p>');
+  assert.match(md,/## Сицилийская философия <!--toc-plain-->/);
+  const rendered=compileArticle({...article(),body:md,notes:[]});
+  assert.equal(rendered.headings.length,1);
+  assert.equal(rendered.headings[0].title,'Сицилийская философия');
+  assert.match(rendered.html,/<h2 class="toc-plain" id="section-1">Сицилийская философия<\/h2>/);
+  assert.doesNotMatch(rendered.html,/<!--toc-plain-->/);
+});

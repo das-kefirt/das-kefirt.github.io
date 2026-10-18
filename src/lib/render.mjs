@@ -25,10 +25,12 @@ export function compileArticle(article, clean) {
   }], renderer: {
     heading({ tokens, depth }) {
       const level = Math.min(Math.max(depth, 2), 3);
-      const title = this.parser.parseInline(tokens);
+      let title = this.parser.parseInline(tokens);
+      const plainToc = /<!--\s*toc-plain\s*-->/.test(title);
+      if (plainToc) title = title.replace(/\s*<!--\s*toc-plain\s*-->/g, '');
       const id = `section-${headings.length + 1}`;
       headings.push({ id, title: title.replace(/<[^>]*>/g, '') });
-      return `<h${level} id="${id}">${title}</h${level}>`;
+      return `<h${level}${plainToc ? ' class="toc-plain"' : ''} id="${id}">${title}</h${level}>`;
     }
   } });
   const html = clean(markdown.parse(article.body));
