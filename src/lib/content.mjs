@@ -16,7 +16,7 @@ const clean = html => sanitizeHtml(html, {
   allowedAttributes: {
     a: ['href', 'id', 'class', 'aria-label', 'data-note', 'role'],
     img: ['src', 'alt', 'width', 'height', 'loading'],
-    h2: ['id'], h3: ['id'], code: ['class']
+    h2: ['id', 'class'], h3: ['id', 'class'], code: ['class']
   },
   allowedSchemes: ['http', 'https', 'mailto'],
   allowProtocolRelative: false
