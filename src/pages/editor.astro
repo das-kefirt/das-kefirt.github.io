@@ -1,0 +1,54 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/editor.css';
+---
+<Base title="Редактор" description="Редактор публикаций das kefirt." noindex>
+  <section class="editor wrap" data-pagefind-ignore>
+    <header class="editor-heading"><div><p class="eyebrow">das kefirt / рабочее место</p><h1>Редактор</h1></div><span id="draft-status" role="status">Черновик хранится в этом браузере</span></header>
+    <noscript>Для редактора нужно включить JavaScript.</noscript>
+    <div class="editor-actions">
+      <label class="editor-button primary" for="import-file">Загрузить Word / открыть файл</label><input id="import-file" type="file" accept=".docx,.md" class="file-input" />
+      <button type="button" id="new-article">Новый текст</button><button type="button" id="download-draft">Скачать черновик</button>
+      <button type="button" id="open-articles">Открыть с сайта</button>
+    </div>
+    <p class="editor-hint">Word обрабатывается в браузере. До нажатия «Опубликовать» текст не отправляется на GitHub. Для переноса на другой компьютер скачай черновик.</p>
+    <div id="editor-status" role="status" aria-live="polite" tabindex="-1"></div>
+    <details id="remote-panel" class="editor-panel"><summary>Публикации на GitHub</summary><div id="remote-list"></div></details>
+    <div class="editor-tabs" role="tablist" aria-label="Режим редактора"><button id="edit-tab" type="button" role="tab" aria-selected="true" aria-controls="edit-panel">Редактирование</button><button id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel" tabindex="-1">Предпросмотр</button></div>
+    <div id="edit-panel" role="tabpanel" aria-labelledby="edit-tab">
+      <form id="article-fields" class="editor-fields" onsubmit="return false">
+        <label class="full">Название<input id="field-title" name="title" autocomplete="off" placeholder="Название текста" /></label>
+        <label>Автор<input id="field-author" name="author" autocomplete="off" /></label>
+        <label>Переводчик<input id="field-translator" name="translator" autocomplete="off" placeholder="Если это перевод" /></label>
+        <label>Раздел<select id="field-section" name="section"><option value="translations">Переводы</option><option value="essays">Тексты</option><option value="columns">Колонки</option></select></label>
+        <label>Дата публикации<input id="field-date" type="date" name="date" /></label>
+        <label class="full">Краткое описание<textarea id="field-description" name="description" rows="2" placeholder="Для списка публикаций и поисковиков"></textarea></label>
+        <label class="full">Адрес текста<input id="field-slug" name="slug" autocomplete="off" placeholder="filosofiya-na-sitsilii" /><span class="editor-hint">После публикации адрес закреплён за текстом.</span></label>
+      </form>
+      <div class="editor-toolbar" role="toolbar" aria-label="Форматирование текста">
+        <button type="button" data-command="bold" title="Жирный (Ctrl+B)"><b>Ж</b></button><button type="button" data-command="italic" title="Курсив (Ctrl+I)"><i>К</i></button>
+        <button type="button" data-block="p">Абзац</button><button type="button" data-block="h2">Заголовок</button><button type="button" data-block="blockquote">Цитата</button>
+        <button type="button" data-command="insertUnorderedList">Список</button><button type="button" id="insert-link">Ссылка</button><button type="button" id="insert-note">+ Сноска</button>
+        <button type="button" data-command="undo" title="Отменить">↶</button><button type="button" data-command="redo" title="Повторить">↷</button>
+      </div>
+      <div id="body-editor" class="prose editor-body" contenteditable="true" role="textbox" aria-label="Основной текст" aria-multiline="true" spellcheck="true" data-placeholder="Напиши текст или загрузи документ Word…"></div>
+      <details class="editor-panel" open><summary>Примечания <span id="note-count">0</span></summary><p class="editor-hint">Нажми «+ Сноска» над текстом, чтобы добавить примечание в месте курсора. Номера на странице назначаются автоматически. В тексте примечаний можно использовать *курсив*, **жирный** и [ссылки](https://…).</p><div id="notes-editor"></div></details>
+      <details class="editor-panel"><summary>Источник, литература и темы</summary><div class="editor-fields">
+        <label class="full">Источник оригинала<textarea id="field-source" rows="3"></textarea></label>
+        <label class="full">Литература<span class="editor-hint">Одна запись — один абзац. Разделяй записи пустой строкой.</span><textarea id="field-bibliography" rows="5"></textarea></label>
+        <label>Темы через запятую<input id="field-tags" /></label><label>Пост для обсуждения<input id="field-discussion" type="url" placeholder="https://t.me/daskefirt/…" /></label>
+      </div></details>
+    </div>
+    <div id="preview-panel" role="tabpanel" aria-labelledby="preview-tab" hidden><article id="article-preview"></article></div>
+    <div class="editor-publish"><button class="editor-button primary" id="publish" type="button">Опубликовать…</button><p class="editor-hint">Перед отправкой можно проверить название и адрес. Сохранение в GitHub делает текст общедоступным.</p></div>
+    <details class="editor-panel" id="github-connection"><summary>Подключение GitHub</summary>
+      <p>Для публикации нужен ключ с доступом к <strong>das-kefirt.github.io</strong>. Он используется только в этой вкладке и отправляется только на api.github.com. После перезагрузки его нужно вставить снова.</p>
+      <ol><li>Открой <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">создание fine-grained token ↗</a> под аккаунтом <strong>das-kefirt</strong>. Задай имя и срок действия.</li><li>В <strong>Repository access → Only select repositories</strong> выбери <strong>das-kefirt.github.io</strong>.</li><li>В <strong>Repository permissions</strong> добавь <strong>Contents: Read and write</strong>. Затем нажми <strong>Generate token</strong>.</li><li>Скопируй ключ в поле ниже. Не вставляй его в текст публикации.</li></ol>
+      <label>Ключ GitHub<input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="Вставь ключ сюда" /></label><button id="forget-token" type="button" class="editor-button">Убрать ключ из вкладки</button>
+    </details>
+    <details class="editor-panel"><summary>Публикация без ключа</summary><p>Можно скачать подготовленный файл и загрузить его через интерфейс GitHub. Файл для публикации отличается от черновика: в нём включён показ на сайте.</p><div class="editor-actions"><button id="download-publication" type="button" class="editor-button">Скачать для публикации</button><a class="editor-button" href="https://github.com/das-kefirt/das-kefirt.github.io/upload/main/src/content/posts" target="_blank" rel="noopener noreferrer">Загрузить в GitHub ↗</a></div><p>Перетащи скачанный <code>.md</code> в GitHub и нажми <strong>Commit changes</strong>. Повторная загрузка файла с тем же именем заменяет предыдущую версию.</p></details>
+    <details class="editor-panel"><summary>Что сохраняется при импорте Word</summary><p>Импорт переносит абзацы, заголовки, списки, жирный, курсив, ссылки, обычные и концевые сноски. Шрифт и размеры задаёт оформление сайта. Изображения автоматически не загружаются; редактор предупредит, если они есть. Формулы, сложные таблицы и правки Word требуют отдельной проверки. Перед импортом лучше принять или отклонить исправления в Word.</p></details>
+  </section>
+  <dialog id="publish-dialog" class="editor-dialog"><h2>Опубликовать текст?</h2><p id="publish-summary"></p><p id="publish-address" class="editor-hint"></p><p>Текст и примечания станут доступны в публичном репозитории. После успешной сборки появится страница сайта.</p><div class="editor-actions"><button id="confirm-publish" class="editor-button primary" type="button">Опубликовать</button><button id="cancel-publish" class="editor-button" type="button">Вернуться к тексту</button></div></dialog>
+  <script>import '../scripts/editor.js';</script>
+</Base>

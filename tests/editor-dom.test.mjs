@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+
+test('Editor restores a draft, edits separate notes, previews references and keeps credentials out of autosave',async()=>{
+  const source=fs.readFileSync(new URL('../src/pages/editor.astro',import.meta.url),'utf8');
+  const section=source.match(/<section class="editor[\s\S]*?<\/section>/)[0];
+  const dialog=source.match(/<dialog[\s\S]*?<\/dialog>/)[0];
+  const {window}=new JSDOM(section+dialog,{url:'https://das-kefirt.github.io/editor/'});
+  for(const key of ['window','document','localStorage','Option'])globalThis[key]=window[key];
+  globalThis.confirm=()=>true;
+  window.localStorage.setItem('das-kefirt-editor-draft-v1',JSON.stringify({article:{title:'Проверка',slug:'proverka',description:'Описание',author:'Автор',translator:'',date:'2026-10-18',section:'essays',source:'',discussion:'',tags:[],body:'Текст {{note:first}}',notes:[{id:'first',text:'Сноска',kind:'Примечание автора'}],bibliography:[]},origin:null}));
+  await import('../src/scripts/editor.js');
+  const $=id=>window.document.getElementById(id);
+  assert.equal($('field-title').value,'Проверка');
+  assert.equal($('body-editor').querySelector('[data-note-id]').dataset.noteId,'first');
+  assert.equal($('notes-editor').querySelector('textarea').value,'Сноска');
+  $('github-token').value='private-test-token';
+  const note=$('notes-editor').querySelector('textarea');note.value='Новое *примечание*';note.dispatchEvent(new window.Event('input',{bubbles:true}));
+  const raw=localStorage.getItem('das-kefirt-editor-draft-v1');assert.doesNotMatch(raw,/private-test-token/);assert.equal(JSON.parse(raw).article.notes[0].text,'Новое *примечание*');
+  $('preview-tab').click();assert.equal($('preview-panel').hidden,false);assert.equal($('edit-panel').hidden,true);
+  assert.equal($('article-preview').querySelector('a.note-ref').getAttribute('href'),'#preview-note-first');
+  assert.match($('preview-note-first').innerHTML,/<em>примечание<\/em>/);
+  $('forget-token').click();assert.equal($('github-token').value,'');
+  $('edit-tab').click();assert.equal($('edit-panel').hidden,false);
+  window.close();
+});
