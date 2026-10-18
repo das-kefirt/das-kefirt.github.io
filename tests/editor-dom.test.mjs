@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {JSDOM} from 'jsdom';
+import {createHash} from 'node:crypto';
 
 test('Editor restores a draft, edits separate notes, previews references and keeps credentials out of autosave',async()=>{
   const source=fs.readFileSync(new URL('../src/pages/editor.astro',import.meta.url),'utf8');
@@ -10,9 +11,15 @@ test('Editor restores a draft, edits separate notes, previews references and kee
   const {window}=new JSDOM(section+dialog,{url:'https://das-kefirt.github.io/editor/'});
   for(const key of ['window','document','localStorage','Option','Event'])globalThis[key]=window[key];
   globalThis.confirm=()=>true;
-  window.localStorage.setItem('das-kefirt-editor-draft-v1',JSON.stringify({article:{title:'Проверка',slug:'proverka',description:'Описание',author:'Автор',translator:'',date:'2026-10-18',section:'essays',source:'',discussion:'',tags:[],body:'Текст {{note:first}}',notes:[{id:'first',text:'Сноска',kind:'Примечание автора'}],bibliography:[]},origin:null}));
+  const imageBytes=Buffer.from('RIFF0000WEBPsynthetic');
+  const cover={src:`/media/covers/${createHash('sha256').update(imageBytes).digest('hex')}.webp`,bytes:imageBytes.length,width:1800,height:600,alt:'Описание обложки',caption:'Автор картинки'};
+  const coverAsset={src:cover.src,base64:imageBytes.toString('base64')};
+  window.localStorage.setItem('das-kefirt-editor-draft-v1',JSON.stringify({article:{title:'Проверка',slug:'proverka',description:'Описание',author:'Автор',translator:'',date:'2026-10-18',section:'essays',source:'',discussion:'',tags:[],body:'Текст {{note:first}}',notes:[{id:'first',text:'Сноска',kind:'Примечание автора'}],bibliography:[],cover},origin:null,coverAsset}));
   await import('../src/scripts/editor.js');
   const $=id=>window.document.getElementById(id);
+  assert.equal($('cover-preview').hidden,false);
+  assert.match($('cover-image').src,/^data:image\/webp;base64,/);
+  assert.equal($('cover-alt').value,cover.alt);
   assert.equal($('field-title').value,'Проверка');
   assert.equal($('body-editor').querySelector('[data-note-id]').dataset.noteId,'first');
   assert.equal($('notes-editor').querySelector('textarea').value,'Сноска');
@@ -22,12 +29,17 @@ test('Editor restores a draft, edits separate notes, previews references and kee
   const note=$('notes-editor').querySelector('textarea');note.value='Новое *примечание*';note.dispatchEvent(new window.Event('input',{bubbles:true}));
   const raw=localStorage.getItem('das-kefirt-editor-draft-v1');assert.doesNotMatch(raw,/private-test-token/);assert.equal(JSON.parse(raw).article.notes[0].text,'Новое *примечание*');
   assert.equal(JSON.parse(raw).article.textAlign,'justify');
+  assert.equal(JSON.parse(raw).coverAsset.base64,coverAsset.base64);
   $('preview-tab').click();assert.equal($('preview-panel').hidden,false);assert.equal($('edit-panel').hidden,true);
   assert.equal($('article-preview').querySelector('a.note-ref').getAttribute('href'),'#preview-note-first');
   assert.match($('preview-note-first').innerHTML,/<em>примечание<\/em>/);
   assert.equal($('article-preview').querySelector('.prose').dataset.textAlign,'justify');
   assert.equal($('article-preview').querySelector('.note-ref').dataset.note,'preview-note-first');
+  assert.equal($('article-preview').querySelector('.article-cover img').alt,cover.alt);
+  assert.equal($('article-preview').querySelector('figcaption').textContent,cover.caption);
   $('forget-token').click();assert.equal($('github-token').value,'');
   $('edit-tab').click();assert.equal($('edit-panel').hidden,false);
+  $('remove-cover').click();assert.equal($('cover-preview').hidden,true);
+  assert.equal(JSON.parse(localStorage.getItem('das-kefirt-editor-draft-v1')).coverAsset,null);
   window.close();
 });

@@ -33,4 +33,7 @@ assert.match(editor, /data-pagefind-ignore/);
 assert.doesNotMatch(fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8'), /\/editor\//);
 assert.match(editor, /id="import-file"/);
 assert.match(editor, /id="confirm-publish"/);
+assert.match(editor, /id="cover-file"/);
+const storage=JSON.parse(fs.readFileSync(path.join(root,'storage.json'),'utf8'));
+assert.ok(storage.siteBytes>0&&storage.siteBytes<=storage.limitBytes,'Site storage budget');
 console.log(`Verified ${htmlFiles.length} HTML pages: links, assets, IDs, note references, sample exclusion.`);

@@ -2,6 +2,7 @@ import { compileArticle as compileWithSanitizer } from './render.mjs';
 import matter from 'gray-matter';
 import { Marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
+import { validateCover } from './cover.mjs';
 
 export const sections = [
   { slug: 'translations', label: 'Переводы', singular: 'Перевод', description: 'Философские тексты в переводе на русский.' },
@@ -30,6 +31,7 @@ export function parseArticle(raw, filename) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new Error(`Некорректный адрес: ${filename}`);
   // Missing published flag is deliberately private from the built website.
   const published = data.published === true;
+  validateCover(data.cover);
   if (published || data.demo === true) {
     for (const key of ['title', 'description', 'author']) {
       if (typeof data[key] !== 'string' || !data[key].trim()) throw new Error(`${filename}: заполните ${key}`);

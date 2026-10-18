@@ -9,9 +9,9 @@ const rendered = compileArticle(article);
 const section = sections.find(s => s.slug === article.section);
 const telegram = /^https:\/\/t\.me\//.test(article.discussion || '') ? article.discussion : site.telegram;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const schema = { '@context': 'https://schema.org', '@type': 'Article', headline: article.title, description: article.description, datePublished: new Date(article.date).toISOString(), author: { '@type': 'Person', name: article.author }, publisher: { '@type': 'Organization', name: 'das kefirt' }, mainEntityOfPage: canonical };
+const schema = { '@context': 'https://schema.org', '@type': 'Article', headline: article.title, description: article.description, datePublished: new Date(article.date).toISOString(), author: { '@type': 'Person', name: article.author }, publisher: { '@type': 'Organization', name: 'das kefirt' }, mainEntityOfPage: canonical, ...(article.cover ? {image:new URL(article.cover.src, Astro.site).href} : {}) };
 ---
-<Base title={article.title} description={article.description} noindex={demo} article>
+<Base title={article.title} description={article.description} image={article.cover?.src} imageAlt={article.cover?.alt} noindex={demo} article>
   {!demo && <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />}
   <article class="reader wrap" data-pagefind-body={!demo ? '' : undefined} data-pagefind-ignore={demo ? '' : undefined}>
     {demo && <div class="demo-banner">Образец оформления</div>}
@@ -21,6 +21,7 @@ const schema = { '@context': 'https://schema.org', '@type': 'Article', headline:
       <p class="reader-deck">{article.description}</p>
       <div class="reader-byline">{demo ? <span>{article.author}</span> : <a href={`/authors/${authorSlug(article.author)}/`}>{article.author}</a>}{article.translator && <span>Перевод: {article.translator}</span>}<time datetime={new Date(article.date).toISOString()}>{formatDate(article.date)}</time><span>{rendered.minutes} мин чтения</span></div>
     </header>
+    {article.cover && <figure class="article-cover reader-cover"><img src={article.cover.src} alt={article.cover.alt || ''} width={article.cover.width} height={article.cover.height} decoding="async" fetchpriority="high" />{article.cover.caption && <figcaption>{article.cover.caption}</figcaption>}</figure>}
     <div class="reader-grid">
       <aside class="reader-sidebar" data-pagefind-ignore><details open><summary>В этом тексте</summary><nav aria-label="Оглавление">{rendered.headings.map(h => <a href={`#${h.id}`}>{h.title}</a>)}{rendered.notes.length > 0 && <a href="#notes">Примечания</a>}{rendered.bibliography.length > 0 && <a href="#bibliography">Литература</a>}</nav></details></aside>
       <div class="reader-content">

@@ -3,6 +3,7 @@ import { Marked } from 'marked';
 import { compileArticle } from '../lib/render.mjs';
 import { createMarkdownConverter, convertWordHtml } from '../lib/editor-import.mjs';
 import { API, REPOSITORY, slugify, serializeArticle, deserializeArticle, validateArticle, publishArticle, decodeContent } from '../lib/editor-core.mjs';
+import { prepareCover, validateCoverAsset, base64ToBytes, coverDataUrl } from '../lib/cover.mjs';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'das-kefirt-editor-draft-v1';
@@ -41,6 +42,7 @@ function readFields() {
   editor.dataset.textAlign = state.article.textAlign;
   state.article.tags = $('field-tags').value.split(',').map(t => t.trim()).filter(Boolean);
   state.article.bibliography = $('field-bibliography').value.split(/\n\s*\n/).map(text => text.trim()).filter(Boolean).map(text => ({text}));
+  if(state.article.cover){state.article.cover.alt=$('cover-alt').value.trim();state.article.cover.caption=$('cover-caption').value.trim();}
   return state.article;
 }
 function saveDraft() {
@@ -76,7 +78,43 @@ function fillForm() {
   else delete $('field-slug').dataset.manual;
   $('field-tags').value = state.article.tags.join(', ');
   $('field-bibliography').value = state.article.bibliography.map(n => typeof n === 'string' ? n : n.text).join('\n\n');
-  paintBody(); paintNotes(); showTab(false);
+  $('cover-alt').value=state.article.cover?.alt||'';
+  $('cover-caption').value=state.article.cover?.caption||'';
+  paintBody(); paintNotes(); paintCover(); showTab(false);
+}
+function paintCover() {
+  const cover=state.article.cover;
+  for(const id of ['cover-preview','cover-fields','remove-cover','cover-manual'])$(id).hidden=!cover;
+  if(!cover){$('cover-image').removeAttribute('src');return;}
+  $('cover-image').src=state.coverAsset?.src===cover.src?coverDataUrl(state.coverAsset):cover.src;
+  $('cover-stats').textContent=`${cover.width} × ${cover.height} · WebP · ${(cover.bytes/1024).toFixed(1)} КБ${state.coverOriginalBytes?` · исходник ${(state.coverOriginalBytes/1024).toFixed(0)} КБ`:''}`;
+}
+async function selectCover(file) {
+  if(!file||locked)return;
+  locked=true;$('cover-file').disabled=true;say('Уменьшаю и сжимаю обложку…');
+  try{
+    const result=await prepareCover(file);
+    result.cover.alt=state.article.cover?.alt||'';result.cover.caption=state.article.cover?.caption||'';
+    state.article.cover=result.cover;state.coverAsset=result.asset;state.coverOriginalBytes=result.originalBytes;
+    $('cover-alt').value=result.cover.alt;$('cover-caption').value=result.cover.caption;
+    paintCover();saveDraft();say(`Обложка готова: ${(result.cover.bytes/1024).toFixed(1)} КБ. Проверь изображение в предпросмотре.${Math.abs(result.cover.width/result.cover.height-3)>.2?' Пропорции отличаются от 3:1; картинка будет показана целиком, без обрезки.':''}`);
+  }finally{locked=false;$('cover-file').disabled=false;$('cover-file').value='';}
+}
+async function ensureCoverAsset() {
+  const cover=state.article.cover;if(!cover)return null;
+  if(state.coverAsset?.src===cover.src){await validateCoverAsset(cover,state.coverAsset);return state.coverAsset;}
+  const response=await fetch(`${API}/contents/public${cover.src}?ref=main`,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+  if(!response.ok)throw new Error('Не удалось скачать обложку для черновика. Попробуй позже или выбери исходную картинку заново.');
+  const file=await response.json();if(file.encoding!=='base64')throw new Error('Не удалось прочитать обложку с GitHub.');
+  const asset={src:cover.src,base64:file.content.replace(/\s/g,'')};await validateCoverAsset(cover,asset);
+  state.coverAsset=asset;saveDraft();paintCover();return asset;
+}
+function saveFile(blob,name) {
+  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function downloadCover() {
+  const asset=await ensureCoverAsset();if(!asset)return;
+  saveFile(new Blob([base64ToBytes(asset.base64)],{type:'image/webp'}),asset.src.split('/').pop());
 }
 function paintNotes() {
   const root = $('notes-editor'); root.replaceChildren();
@@ -143,22 +181,29 @@ function renderPreview() {
   for(const node of body.querySelectorAll('[id]'))node.id=`preview-${node.id}`;
   for(const node of body.querySelectorAll('[data-note]'))node.dataset.note=`preview-${node.dataset.note}`;
   for(const node of body.querySelectorAll('a[href^="#"]'))node.setAttribute('href',`#preview-${node.getAttribute('href').slice(1)}`);
-  root.append(h,deck,byline,body);
+  root.append(h,deck,byline);
+  if(a.cover){const figure=document.createElement('figure');figure.className='article-cover';const img=document.createElement('img');img.src=state.coverAsset?.src===a.cover.src?coverDataUrl(state.coverAsset):a.cover.src;img.alt=a.cover.alt||'';img.width=a.cover.width;img.height=a.cover.height;figure.append(img);if(a.cover.caption){const caption=document.createElement('figcaption');caption.textContent=a.cover.caption;figure.append(caption);}root.append(figure);}
+  root.append(body);
   if(a.source){const source=document.createElement('section');source.className='source-block';const heading=document.createElement('h2');heading.className='eyebrow';heading.textContent='Источник / сведения о тексте';const text=document.createElement('p');text.textContent=a.source;source.append(heading,text);root.append(source);}
   if(rendered.notes.length){const section=document.createElement('section');section.className='notes-section';const heading=document.createElement('h2');heading.textContent='Примечания';const ol=document.createElement('ol');
     for(const note of rendered.notes){const li=document.createElement('li');li.id=`preview-note-${note.id}`;const label=document.createElement('span');label.className='note-kind';label.textContent=note.kind||'Примечание';const content=document.createElement('div');content.className='note-content';content.innerHTML=note.html;li.append(label,content);for(const ref of note.refs){const a=document.createElement('a');a.href=`#preview-${ref}`;a.textContent='↩ К тексту';li.append(a);}ol.append(li);}section.append(heading,ol);root.append(section);}
   if(rendered.bibliography.length){const section=document.createElement('section');section.className='bibliography';const heading=document.createElement('h2');heading.textContent='Литература';const ol=document.createElement('ol');for(const html of rendered.bibliography){const li=document.createElement('li');li.innerHTML=html;ol.append(li);}section.append(heading,ol);root.append(section);}
 }
-function download(published) {
+async function download(published) {
+  if(locked)return;
+  locked=true;
+  try {
   const a=readFields();
   if(published)validateArticle(a);
-  const blob=new Blob([serializeArticle({...a,_editor:state.origin},published)],{type:'text/markdown;charset=utf-8'});
-  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`${a.slug||'chernovik'}.md`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  if(published)say('Файл для публикации скачан. Загрузите его в папку src/content/posts на GitHub и подтвердите Commit changes.');
+  const asset=!published&&a.cover?await ensureCoverAsset():null;
+  const blob=new Blob([serializeArticle({...a,_editor:state.origin,_cover:asset},published)],{type:'text/markdown;charset=utf-8'});
+  saveFile(blob,`${a.slug||'chernovik'}.md`);
+  if(published)say(a.cover?'Текст скачан. Сначала загрузи WebP из кнопки «Скачать WebP-обложку» в папку обложек, затем этот .md в папку текстов. Если обложка уже есть на GitHub, достаточно загрузить текст.':'Файл для публикации скачан. Загрузи его в папку src/content/posts на GitHub и подтверди Commit changes.');
+  } finally {locked=false;}
 }
 function mayReplace() {
   readFields();
-  return (!state.article.body && !state.article.title) || confirm('Заменить текущий черновик? Если он ещё нужен, нажми «Отмена» и сначала скачай его.');
+  return (!state.article.body && !state.article.title && !state.article.cover) || confirm('Заменить текущий черновик? Если он ещё нужен, нажми «Отмена» и сначала скачай его.');
 }
 async function importFile(file) {
   if(locked || !file || !mayReplace())return;
@@ -168,8 +213,10 @@ async function importFile(file) {
     if(/\.md$/i.test(file.name)) {
       const article=deserializeArticle(await file.text(),file.name);
       const origin=article._editor && article._editor.slug===article.slug && /^[0-9a-f]{40}$/.test(article._editor.sha) ? article._editor : null;
+      const coverAsset=article._cover||null;if(coverAsset)await validateCoverAsset(article.cover,coverAsset);
       delete article._editor;
-      state={article,origin};fillForm();saveDraft();say(origin ? 'Черновик открыт. При публикации проверим, не изменилась ли исходная статья.' : 'Черновик открыт. Для обновления уже опубликованного текста используй «Открыть с сайта»: это защитит изменения от перезаписи.');
+      delete article._cover;
+      state={article,origin,coverAsset};fillForm();saveDraft();say(origin ? 'Черновик открыт. При публикации проверим, не изменилась ли исходная статья.' : 'Черновик открыт. Для обновления уже опубликованного текста используй «Открыть с сайта»: это защитит изменения от перезаписи.');
     } else if(/\.docx$/i.test(file.name)) {
       const result=await readWord(await file.arrayBuffer());
       const imported=convertWordHtml(result.html,{document,sanitize:clean});
@@ -222,7 +269,7 @@ function reviewPublish() {
   if(!$('github-token').value.trim()){$('github-connection').open=true;say('Для отправки вставь ключ GitHub ниже. Можно также скачать файл и опубликовать без ключа.');$('github-token').focus();return;}
   renderPreview();showTab(true);
   pendingArticle=structuredClone(article);
-  $('publish-summary').textContent=`${article.title} · ${article.author}${article.translator?` · Перевод: ${article.translator}`:''} · Примечаний: ${article.notes.length}`;
+  $('publish-summary').textContent=`${article.title} · ${article.author}${article.translator?` · Перевод: ${article.translator}`:''} · Примечаний: ${article.notes.length}${article.cover?` · Обложка: ${(article.cover.bytes/1024).toFixed(1)} КБ`:''}`;
   $('publish-address').textContent=`https://das-kefirt.github.io/read/${article.slug}/`;
   $('publish-dialog').showModal();
 }
@@ -232,7 +279,7 @@ async function sendPublication() {
   say('Отправляю публикацию на GitHub…');
   const article=pendingArticle;
   try {
-    const result=await publishArticle({article,token:$('github-token').value,expectedSha:state.origin?.slug===article.slug?state.origin.sha:undefined});
+    const result=await publishArticle({article,token:$('github-token').value,coverAsset:state.coverAsset,expectedSha:state.origin?.slug===article.slug?state.origin.sha:undefined});
     state.origin={slug:article.slug,sha:result.content.sha};state.article.published=true;$('field-slug').disabled=true;saveDraft();
     $('publish-dialog').close();
     say('Файл сохранён в GitHub. Сайт обновится после успешной сборки. ');
@@ -243,7 +290,7 @@ async function sendPublication() {
 }
 
 // No credentials enter draft state, storage, downloads or error messages.
-try {const raw=localStorage.getItem(storageKey);if(raw){const restored=JSON.parse(raw);if(restored?.article){const article=deserializeArticle(serializeArticle(restored.article));state={article,origin:restored.origin||null};}}}catch{say('Сохранённый черновик не удалось восстановить. Можно открыть скачанный файл.',true);}
+try {const raw=localStorage.getItem(storageKey);if(raw){const restored=JSON.parse(raw);if(restored?.article){const article=deserializeArticle(serializeArticle(restored.article));const asset=restored.coverAsset||null;if(asset)base64ToBytes(asset.base64);state={article,origin:restored.origin||null,coverAsset:asset,coverOriginalBytes:restored.coverOriginalBytes};}}}catch{say('Сохранённый черновик не удалось восстановить. Можно открыть скачанный файл.',true);}
 fillForm();
 document.addEventListener('selectionchange',rememberSelection);
 editor.addEventListener('input',updateBody);
@@ -283,8 +330,13 @@ $('edit-tab').addEventListener('click',()=>showTab(false));$('preview-tab').addE
 for(const id of ['edit-tab','preview-tab'])$(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const preview=id==='edit-tab';showTab(preview);$(preview?'preview-tab':'edit-tab').focus();}});
 $('import-file').addEventListener('change',e=>importFile(e.target.files[0]).catch(err=>say(errorMessage(err),true)));
 $('new-article').addEventListener('click',()=>{if(locked||!mayReplace())return;state={article:blankArticle(),origin:null};delete $('field-slug').dataset.manual;fillForm();saveDraft();say('Новый черновик.');$('field-title').focus();});
-$('download-draft').addEventListener('click',()=>{try{download(false);}catch(e){say(errorMessage(e),true);}});
-$('download-publication').addEventListener('click',()=>{try{download(true);}catch(e){say(errorMessage(e),true);}});
+$('download-draft').addEventListener('click',()=>download(false).catch(e=>say(errorMessage(e),true)));
+$('download-publication').addEventListener('click',()=>download(true).catch(e=>say(errorMessage(e),true)));
+$('cover-file').addEventListener('change',e=>selectCover(e.target.files[0]).catch(err=>say(errorMessage(err),true)));
+$('remove-cover').addEventListener('click',()=>{if(locked)return;state.article.cover=null;state.coverAsset=null;state.coverOriginalBytes=null;paintCover();saveDraft();say('Обложка убрана из черновика. Изменение появится на сайте после публикации.');});
+for(const id of ['cover-alt','cover-caption'])$(id).addEventListener('input',saveDraft);
+$('download-cover').addEventListener('click',()=>downloadCover().catch(e=>say(errorMessage(e),true)));
+fetch('/storage.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}).then(s=>{$('storage-status').textContent=`После последней сборки: сайт ${(s.siteBytes/1_000_000).toFixed(2)} МБ из 1000 МБ; обложек — ${s.coverCount}, ${(s.coverBytes/1_000_000).toFixed(2)} МБ. История репозитория в этот объём не входит.`;}).catch(()=>{$('storage-status').textContent='Объём сайта будет показан после следующей успешной сборки.';});
 $('open-articles').addEventListener('click',openArticles);
 $('publish').addEventListener('click',()=>{try{reviewPublish();}catch(e){say(errorMessage(e),true);}});
 $('confirm-publish').addEventListener('click',sendPublication);
