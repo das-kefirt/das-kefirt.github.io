@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {attachNotePopover} from '../src/lib/note-popover.mjs';
 
 function setup() {
-  const markup=fs.readFileSync(new URL('../src/components/NotePopover.astro',import.meta.url),'utf8').split('<script>')[0];
+  const markup=fs.readFileSync(new URL('../src/components/note-popover.html',import.meta.url),'utf8');
   const {window}=new JSDOM(`<button id="outside">Вне окна</button><a class="note-ref" data-note="note-a" href="#note-a">1</a><a class="note-ref" data-note="note-b" href="#note-b">2</a><ol><li id="note-a"><span class="note-kind">Примечание переводчика</span><div class="note-content"><p>Текст <em>сноски</em>. <a href="https://example.org">Источник</a></p></div></li><li id="note-b"><span class="note-kind">Примечание автора</span><div class="note-content">Вторая сноска</div></li></ol>${markup}`,{url:'https://das-kefirt.github.io/preview/'});
   const doc=window.document,popup=doc.getElementById('note-popover'),ref=doc.querySelector('.note-ref');
   const cleanup=attachNotePopover(doc,popup);

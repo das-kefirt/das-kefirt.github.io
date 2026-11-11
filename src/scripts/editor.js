@@ -130,7 +130,7 @@ function paintCover() {
   const cover=state.article.cover;
   for(const id of ['cover-preview','cover-fields','remove-cover','cover-manual'])$(id).hidden=!cover;
   if(!cover){$('cover-image').removeAttribute('src');return;}
-  $('cover-image').src=state.coverAsset?.src===cover.src?coverDataUrl(state.coverAsset):cover.src;
+  $('cover-image').src=state.coverAsset?.src===cover.src?coverDataUrl(state.coverAsset):'https://das-kefirt.github.io'+cover.src;
   $('cover-stats').textContent=`${cover.width} × ${cover.height} · WebP · ${(cover.bytes/1024).toFixed(1)} КБ${state.coverOriginalBytes?` · исходник ${(state.coverOriginalBytes/1024).toFixed(0)} КБ`:''}`;
 }
 async function selectCover(file) {
@@ -227,7 +227,7 @@ function renderPreview() {
   for(const node of body.querySelectorAll('[data-note]'))node.dataset.note=`preview-${node.dataset.note}`;
   for(const node of body.querySelectorAll('a[href^="#"]'))node.setAttribute('href',`#preview-${node.getAttribute('href').slice(1)}`);
   root.append(h,deck,byline);
-  if(a.cover){const figure=document.createElement('figure');figure.className='article-cover';const img=document.createElement('img');img.src=state.coverAsset?.src===a.cover.src?coverDataUrl(state.coverAsset):a.cover.src;img.alt=a.cover.alt||'';img.width=a.cover.width;img.height=a.cover.height;figure.append(img);if(a.cover.caption){const caption=document.createElement('figcaption');caption.textContent=a.cover.caption;figure.append(caption);}root.append(figure);}
+  if(a.cover){const figure=document.createElement('figure');figure.className='article-cover';const img=document.createElement('img');img.src=state.coverAsset?.src===a.cover.src?coverDataUrl(state.coverAsset):'https://das-kefirt.github.io'+a.cover.src;img.alt=a.cover.alt||'';img.width=a.cover.width;img.height=a.cover.height;figure.append(img);if(a.cover.caption){const caption=document.createElement('figcaption');caption.textContent=a.cover.caption;figure.append(caption);}root.append(figure);}
   root.append(body);
   if(a.source){const source=document.createElement('section');source.className='source-block';const heading=document.createElement('h2');heading.className='eyebrow';heading.textContent='Источник / сведения о тексте';const text=document.createElement('p');text.textContent=a.source;source.append(heading,text);root.append(source);}
   if(rendered.notes.length){const section=document.createElement('section');section.className='notes-section';const heading=document.createElement('h2');heading.textContent='Примечания';const ol=document.createElement('ol');
@@ -274,9 +274,10 @@ async function importFile(file) {
     } else throw new Error('Поддерживаются файлы .docx и черновики .md.');
   } finally {locked=false;$('import-file').value='';}
 }
-function readWord(arrayBuffer) {
+async function readWord(arrayBuffer) {
+  const { default: WordWorker } = await import('../lib/docx.worker.js?worker&inline');
   return new Promise((resolve,reject)=>{
-    const worker=new Worker(new URL('../lib/docx.worker.js',import.meta.url),{type:'module'});
+    const worker=new WordWorker();
     const timer=setTimeout(()=>{worker.terminate();reject(new Error('Импорт занял слишком много времени. Попробуй упростить или разделить Word-файл.'));},45000);
     const finish=()=>{clearTimeout(timer);worker.terminate();};
     worker.onmessage=({data})=>{finish();data.error?reject(new Error(data.error)):resolve(data);};
@@ -396,7 +397,7 @@ $('cover-file').addEventListener('change',e=>selectCover(e.target.files[0]).catc
 $('remove-cover').addEventListener('click',()=>{if(locked)return;state.article.cover=null;state.coverAsset=null;state.coverOriginalBytes=null;paintCover();saveDraft();say('Обложка убрана из черновика. Изменение появится на сайте после публикации.');});
 for(const id of ['cover-alt','cover-caption'])$(id).addEventListener('input',saveDraft);
 $('download-cover').addEventListener('click',()=>downloadCover().catch(e=>say(errorMessage(e),true)));
-fetch('/storage.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}).then(s=>{$('storage-status').textContent=`После последней сборки: сайт ${(s.siteBytes/1_000_000).toFixed(2)} МБ из 1000 МБ; обложек — ${s.coverCount}, ${(s.coverBytes/1_000_000).toFixed(2)} МБ. История репозитория в этот объём не входит.`;}).catch(()=>{$('storage-status').textContent='Объём сайта будет показан после следующей успешной сборки.';});
+fetch('https://das-kefirt.github.io/storage.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json();}).then(s=>{$('storage-status').textContent=`После последней сборки: сайт ${(s.siteBytes/1_000_000).toFixed(2)} МБ из 1000 МБ; обложек — ${s.coverCount}, ${(s.coverBytes/1_000_000).toFixed(2)} МБ. История репозитория в этот объём не входит.`;}).catch(()=>{$('storage-status').textContent='Объём сайта будет показан после следующей успешной сборки.';});
 $('open-articles').addEventListener('click',openArticles);
 $('publish').addEventListener('click',()=>{try{reviewPublish();}catch(e){say(errorMessage(e),true);}});
 $('confirm-publish').addEventListener('click',sendPublication);

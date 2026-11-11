@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {createHash} from 'node:crypto';
 
 test('Editor restores a draft, edits separate notes, previews references and keeps credentials out of autosave',async()=>{
-  const source=fs.readFileSync(new URL('../src/pages/editor.astro',import.meta.url),'utf8');
+  const source=fs.readFileSync(new URL('../src/private-editor/template.html',import.meta.url),'utf8');
   const section=source.match(/<section class="editor[\s\S]*?<\/section>/)[0];
   const dialog=source.match(/<dialog[\s\S]*?<\/dialog>/)[0];
   const {window}=new JSDOM(section+dialog,{url:'https://das-kefirt.github.io/editor/'});

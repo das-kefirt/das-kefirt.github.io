@@ -1,9 +1,6 @@
----
-import Base from '../layouts/Base.astro';
-import NotePopover from '../components/NotePopover.astro';
-import '../styles/editor.css';
----
-<Base title="Редактор" description="Редактор публикаций das kefirt." noindex>
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Редактор · das kefirt</title><style>/*STYLE*/</style></head>
+<body><main id="main">
   <section class="editor wrap" data-pagefind-ignore>
     <header class="editor-heading"><div><p class="eyebrow">das kefirt / рабочее место</p><h1>Редактор</h1></div><span id="draft-status" role="status">Черновик хранится в этом браузере</span></header>
     <noscript>Для редактора нужно включить JavaScript.</noscript>
@@ -63,6 +60,6 @@ import '../styles/editor.css';
     <details class="editor-panel"><summary>Что сохраняется при импорте Word</summary><p>Импорт переносит абзацы, заголовки, списки, жирный, курсив, ссылки, обычные и концевые сноски. Шрифт и размеры задаёт оформление сайта. Изображения автоматически не загружаются; редактор предупредит, если они есть. Формулы, сложные таблицы и правки Word требуют отдельной проверки. Перед импортом лучше принять или отклонить исправления в Word.</p></details>
   </section>
   <dialog id="publish-dialog" class="editor-dialog"><h2>Опубликовать текст?</h2><p id="publish-summary"></p><p id="publish-address" class="editor-hint"></p><p>Текст и примечания станут доступны в публичном репозитории. После успешной сборки появится страница сайта.</p><div class="editor-actions"><button id="confirm-publish" class="editor-button primary" type="button">Опубликовать</button><button id="cancel-publish" class="editor-button" type="button">Вернуться к тексту</button></div></dialog>
-  <NotePopover />
-  <script>import '../scripts/editor.js';</script>
-</Base>
+</main>
+<!--NOTES-->
+<script>/*APP*/</script></body></html>
